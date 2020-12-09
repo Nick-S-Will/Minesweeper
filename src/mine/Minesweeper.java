@@ -1,25 +1,14 @@
 package mine;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GridLayout;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Random;
-
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JSpinner;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.Timer;
+import java.util.Vector;
 
 public class Minesweeper implements ActionListener, MouseListener {
 	public static final int GRID = 32; // Tile Size in Pixels
@@ -29,6 +18,7 @@ public class Minesweeper implements ActionListener, MouseListener {
 	JFrame f = new JFrame(), setup = new JFrame(); // Game JFrame and Size Select JFrame
 	JLabel minesText = new JLabel(), timeText = new JLabel(); // Text for mines variable and ticks variable
 	JSpinner sizeSpinner = new JSpinner(new SpinnerNumberModel(10, 10, 20, 1)); // Board Size Selector
+	Point mouseDownPos;
 	// Seconds Counter in Game, ..., Flagged Mines Count, Unmined Tile Count
 	int ticks, startingMines, mines, size, coveredTiles;
 	Tile[][] tiles;
@@ -42,13 +32,15 @@ public class Minesweeper implements ActionListener, MouseListener {
 			JOptionPane.showMessageDialog(null, "Icon not found :/");
 		}
 
+		// Making Setup Frame
 		setup.setTitle("Setup");
 		setup.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setup.setSize(10 * GRID + 14, 2 * GRID + 37);
 		setup.setLocationRelativeTo(null);
 		setup.setResizable(false);
 		setup.getContentPane().setLayout(new GridLayout(1, 4, 0, 0));
-		
+
+		// Adding UI Elements
 		JLabel sizeText = new JLabel("Size");
 		JButton start = new JButton("Start");
 		Font main = new Font("Impact", Font.PLAIN, 30);
@@ -61,11 +53,13 @@ public class Minesweeper implements ActionListener, MouseListener {
 		setup.add(sizeSpinner);
 		setup.add(start);
 
+		// Timer Setup
 		t = new Timer(1000, this);
 		setup.setVisible(true);
 	}
 
 	public static void main(String[] args) {
+		// Getting Necessary Assets for Gameplay
 		try {
 			Plain = new ImageIcon("images/plain.png");
 			Flag  = new ImageIcon("images/flag.png");
@@ -86,34 +80,45 @@ public class Minesweeper implements ActionListener, MouseListener {
 		m = new Minesweeper();
 	}
 
-	@Override
+	// Called Every Timer Tick
 	public void actionPerformed(ActionEvent e) {
 		timeText.setText("Time: " + ++ticks + "  ");
 	}
 
-	@Override
-	public void mouseClicked(MouseEvent e) {
+	public void mousePressed(MouseEvent e) {
+		// Saved Tile on Mouse Down
 		try {
+			mouseDownPos = e.getLocationOnScreen();
+		} catch (Exception ignored){}
+	}
+
+	// Called Every Click on the UI
+	public void mouseReleased(MouseEvent e) {
+		try {
+			// Check If Clicked on Tile
 			Tile a = (Tile) e.getComponent();
-			
-			if (e.getButton() == MouseEvent.BUTTON1) {
-				if (!a.isFlagged()) {
-					if (a.isMine()) {
-						for (Tile[] i : tiles) for (Tile j : i) if (j.isMine()) j.setIcon(Mine);
-						JOptionPane.showMessageDialog(null, "Game Over");
-						System.exit(0);
+
+			// If Mouse Up on Same Tile
+			if (PointDistance(mouseDownPos, e.getLocationOnScreen()) <= GRID / 2){
+				if (e.getButton() == MouseEvent.BUTTON1) { // Left Click Try Dig
+					if (!a.isFlagged()) {
+						if (a.isMine()) { // Lose Game
+							for (Tile[] i : tiles) for (Tile j : i) if (j.isMine()) j.setIcon(Mine);
+							JOptionPane.showMessageDialog(null, "Game Over");
+							System.exit(0);
+						}
+						else checkTile(a); // Dig
 					}
-					else checkTile(a);
 				}
-			}
-			else if (e.getButton() == MouseEvent.BUTTON3) {
-				if (!a.isMined()) {
-					a.setFlagged(!a.isFlagged());
-					a.setIcon(a.isFlagged() ? Flag : Plain);
-					if (a.isFlagged()) mines--;
-					else mines++;
-					
-					minesText.setText("  Mines: " + mines);
+				else if (e.getButton() == MouseEvent.BUTTON3) { // Right Click Toggle Flag
+					if (!a.isMined()) {
+						a.setFlagged(!a.isFlagged());
+						a.setIcon(a.isFlagged() ? Flag : Plain);
+						if (a.isFlagged()) mines--;
+						else mines++;
+
+						minesText.setText("  Mines: " + mines);
+					}
 				}
 			}
 		}
@@ -124,7 +129,7 @@ public class Minesweeper implements ActionListener, MouseListener {
 				mines = startingMines;
 				tiles = new Tile[size][size];
 				coveredTiles = size * size;
-				
+
 				f.setTitle("Minesweeper");
 				f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 				f.setSize(size * GRID + 14, (size + 2) * GRID + 37);
@@ -169,12 +174,17 @@ public class Minesweeper implements ActionListener, MouseListener {
 					board.add(a);
 				}
 				f.getContentPane().add(board, BorderLayout.CENTER);
-				
+
 				t.start();
 				setup.setVisible(false);
 				f.setVisible(true);
 			}
 		}
+		mouseDownPos = null;
+	}
+
+	private int PointDistance(Point a, Point b){
+		return (int) Math.sqrt(Math.pow(Math.abs(a.x - b.x), 2) + Math.pow(Math.abs(a.y - b.y), 2));
 	}
 
 	private void checkTile(Tile a) {
@@ -184,21 +194,17 @@ public class Minesweeper implements ActionListener, MouseListener {
 			int mineCount = 0;
 
 			for (int x = -1;x <= 1;x++) for (int y = -1;y <= 1;y++) {
-				if (x != 0 && y != 0) {
-					try {
-						if (tiles[a.getX()/GRID + x][a.getY()/GRID + y].isMine()) mineCount++;
-					} catch (Exception ignored) {}
-				}
+				try {
+					if (tiles[a.getX()/GRID + x][a.getY()/GRID + y].isMine()) mineCount++;
+				} catch (Exception ignored) {}
 			}
 			a.setIcon(getNumber(mineCount));
 
 			if (mineCount == 0) {
 				for (int x = -1;x <= 1;x++) for (int y = -1;y <= 1;y++) if (!(x == 0 && y == 0)) {
-					if (x != 0 && y != 0) {
-						try {
-							checkTile(tiles[a.getX()/GRID + x][a.getY()/GRID + y]);
-						} catch (Exception ignored) {}
-					}
+					try {
+						checkTile(tiles[a.getX()/GRID + x][a.getY()/GRID + y]);
+					} catch (Exception ignored) {}
 				}
 			}
 
@@ -212,24 +218,19 @@ public class Minesweeper implements ActionListener, MouseListener {
 
 	public static ImageIcon getNumber(int mines) {
 		switch(mines) {
-		case 0: return Empty;
-		case 1: return one;
-		case 2: return two;
-		case 3: return three;
-		case 4: return four;
-		case 5: return five;
-		case 6: return six;
-		case 7: return seven;
-		default: return eight;
+			case 0: return Empty;
+			case 1: return one;
+			case 2: return two;
+			case 3: return three;
+			case 4: return four;
+			case 5: return five;
+			case 6: return six;
+			case 7: return seven;
+			default: return eight;
 		}
 	}
 
-	@Override
-	public void mousePressed(MouseEvent e) {}
-	@Override
-	public void mouseReleased(MouseEvent e) {}
-	@Override
+	public void mouseClicked(MouseEvent e) {}
 	public void mouseEntered(MouseEvent e) {}
-	@Override
 	public void mouseExited(MouseEvent e) {}
 }
