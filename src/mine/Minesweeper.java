@@ -22,19 +22,26 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.Timer;
 
 public class Minesweeper implements ActionListener, MouseListener {
-	public static final int GRID = 32; //tile size in pixels
-	public static Minesweeper m;
-	static ImageIcon Plain, Flag, Mine, Empty, one, two, three, four, five, six, seven, eight; //tile images
+	public static final int GRID = 32; // Tile Size in Pixels
+	public static Minesweeper m; // Game Instance;
+	static ImageIcon Plain, Flag, Mine, Empty, one, two, three, four, five, six, seven, eight; // Tile Images
 	static Timer t;
-	JFrame f = new JFrame(), setup = new JFrame();
-	JLabel minesText = new JLabel(), timeText = new JLabel(); //number of mines unflagged, length of current game in seconds
-	JSpinner sizeSpinner = new JSpinner(new SpinnerNumberModel(10, 10, 20, 1)); //size of the board
-	int ticks, startMines, mines, size, coveredTiles; //number of timer updates since start, ..., number of mines unflagged, ...
+	JFrame f = new JFrame(), setup = new JFrame(); // Game JFrame and Size Select JFrame
+	JLabel minesText = new JLabel(), timeText = new JLabel(); // Text for mines variable and ticks variable
+	JSpinner sizeSpinner = new JSpinner(new SpinnerNumberModel(10, 10, 20, 1)); // Board Size Selector
+	// Seconds Counter in Game, ..., Flagged Mines Count, Unmined Tile Count
+	int ticks, startingMines, mines, size, coveredTiles;
 	Tile[][] tiles;
 
 	public Minesweeper() {
-		try {f.setIconImage(new ImageIcon("images/icon.png").getImage());} catch (Exception e) {}
-		try {setup.setIconImage(new ImageIcon("images/icon.png").getImage());} catch (Exception e) {}
+		try {
+			var icon = new ImageIcon("images/icon.png").getImage();
+			f.setIconImage(icon);
+			setup.setIconImage(icon);
+		} catch (Exception e){
+			JOptionPane.showMessageDialog(null, "Icon not found :/");
+		}
+
 		setup.setTitle("Setup");
 		setup.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setup.setSize(10 * GRID + 14, 2 * GRID + 37);
@@ -72,7 +79,9 @@ public class Minesweeper implements ActionListener, MouseListener {
 			six   = new ImageIcon("images/six.png");
 			seven = new ImageIcon("images/seven.png");
 			eight = new ImageIcon("images/eight.png");
-		} catch (Exception e) {}
+		} catch (Exception ignored) {
+			JOptionPane.showMessageDialog(null, "Sprites not found :/");
+		}
 
 		m = new Minesweeper();
 	}
@@ -111,8 +120,8 @@ public class Minesweeper implements ActionListener, MouseListener {
 		catch (Exception E) {
 			if (e.getButton() == MouseEvent.BUTTON1) {
 				size = (int) sizeSpinner.getValue();
-				startMines = size * size / 8;
-				mines = startMines;
+				startingMines = size * size / 8;
+				mines = startingMines;
 				tiles = new Tile[size][size];
 				coveredTiles = size * size;
 				
@@ -138,7 +147,7 @@ public class Minesweeper implements ActionListener, MouseListener {
 				JPanel board = new JPanel();
 				board.setLayout(new GridLayout(size, size));
 
-				ArrayList<Integer> toAdd = new ArrayList<Integer>();
+				var toAdd = new ArrayList<Integer>();
 				Random r = new Random();
 				while (toAdd.size() < mines) {
 					int ran = r.nextInt(coveredTiles);
@@ -175,21 +184,25 @@ public class Minesweeper implements ActionListener, MouseListener {
 			int mineCount = 0;
 
 			for (int x = -1;x <= 1;x++) for (int y = -1;y <= 1;y++) {
-				try {
-					if (tiles[a.getX()/GRID + x][a.getY()/GRID + y].isMine()) mineCount++;
-				} catch (Exception E) {}
+				if (x != 0 && y != 0) {
+					try {
+						if (tiles[a.getX()/GRID + x][a.getY()/GRID + y].isMine()) mineCount++;
+					} catch (Exception ignored) {}
+				}
 			}
 			a.setIcon(getNumber(mineCount));
 
 			if (mineCount == 0) {
 				for (int x = -1;x <= 1;x++) for (int y = -1;y <= 1;y++) if (!(x == 0 && y == 0)) {
-					try {
-						checkTile(tiles[a.getX()/GRID + x][a.getY()/GRID + y]);
-					} catch (Exception E) {}
+					if (x != 0 && y != 0) {
+						try {
+							checkTile(tiles[a.getX()/GRID + x][a.getY()/GRID + y]);
+						} catch (Exception ignored) {}
+					}
 				}
 			}
 
-			if (coveredTiles == startMines) {
+			if (coveredTiles == startingMines) {
 				t.stop();
 				JOptionPane.showMessageDialog(null, "You beat size " + size + " in " + ticks + " seconds");
 				System.exit(0);
