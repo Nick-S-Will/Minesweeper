@@ -8,7 +8,7 @@ public class Tile extends JButton {
 	private static final long serialVersionUID = 1L;
 	
 	public Tile(int x, int y, boolean mine) {
-		this.setIcon(Minesweeper.Plain);
+		this.setIcon(Minesweeper.plain);
 		x1 = x;
 		y1 = y;
 		this.mine = mine;
