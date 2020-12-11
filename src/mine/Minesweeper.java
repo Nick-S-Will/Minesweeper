@@ -21,7 +21,7 @@ public class Minesweeper implements ActionListener, MouseListener {
 	int ticks, startingMines, mines, size, coveredTiles;
 	Tile[][] tiles;
 
-	public Minesweeper() {
+	public Minesweeper() { // Makes Setup Menu
 		try {
 			var icon = new ImageIcon("images/icon.png").getImage();
 			f.setIconImage(icon);
